@@ -152,6 +152,26 @@ Stores customer feedback for resolved requests.
 
 **Indexes**: `idx_feedback_rating`, `idx_feedback_request_id`
 
+#### AUDIT_LOG
+Stores audit trail of all changes to key tables (optional - Phase 8).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| audit_id | NUMBER | PRIMARY KEY | Unique audit log identifier |
+| table_name | VARCHAR2(50) | NOT NULL | Name of the table being audited |
+| record_id | NUMBER | | ID of the record being changed |
+| operation | VARCHAR2(10) | NOT NULL, CHECK | Operation type: INSERT, UPDATE, DELETE |
+| column_name | VARCHAR2(100) | | Name of the column changed (or ALL_COLUMNS/RECORD_DELETED) |
+| old_value | VARCHAR2(4000) | | Previous value (for UPDATE/DELETE) |
+| new_value | VARCHAR2(4000) | | New value (for INSERT/UPDATE) |
+| changed_by | VARCHAR2(100) | DEFAULT USER | Database user who made the change |
+| changed_at | TIMESTAMP | DEFAULT CURRENT_TIMESTAMP | Timestamp of the change |
+| session_id | VARCHAR2(100) | | Database session ID |
+| ip_address | VARCHAR2(50) | | IP address (if available) |
+| additional_info | VARCHAR2(1000) | | Additional context information |
+
+**Indexes**: `idx_audit_table_name`, `idx_audit_record_id`, `idx_audit_changed_at`, `idx_audit_changed_by`, `idx_audit_operation`, `idx_audit_table_record`
+
 ---
 
 ## 2. PL/SQL Components
@@ -194,6 +214,49 @@ Stores customer feedback for resolved requests.
 - Updates SERVICE_REQUESTS status to 'Closed'
 - Sets resolved_at timestamp if not already set
 - Updates TECHNICIANS availability to 'Available' if no other active assignments exist
+
+### 2.1.1 Audit Triggers
+
+The audit system includes triggers that automatically log all changes to key tables:
+
+#### TRG_AUDIT_SERVICE_REQUESTS
+**Event**: AFTER INSERT OR UPDATE OR DELETE on SERVICE_REQUESTS
+
+**Functionality**:
+- Logs all INSERT operations with full record details
+- Logs UPDATE operations for changed columns only (status, priority, issue_type, resolved_at)
+- Logs DELETE operations with key record information
+- Captures user, timestamp, and operation type
+
+#### TRG_AUDIT_ASSIGNMENTS
+**Event**: AFTER INSERT OR UPDATE OR DELETE on ASSIGNMENTS
+
+**Functionality**:
+- Logs assignment creation, reassignment, and deletion
+- Tracks technician_id changes
+
+#### TRG_AUDIT_CUSTOMERS
+**Event**: AFTER INSERT OR UPDATE OR DELETE on CUSTOMERS
+
+**Functionality**:
+- Logs customer information changes (name, tier, contact)
+- Tracks customer record creation and deletion
+
+#### TRG_AUDIT_TECHNICIANS
+**Event**: AFTER INSERT OR UPDATE OR DELETE on TECHNICIANS
+
+**Functionality**:
+- Logs technician availability and skill level changes
+- Tracks technician record creation and deletion
+
+#### TRG_AUDIT_FEEDBACK
+**Event**: AFTER INSERT OR UPDATE OR DELETE on FEEDBACK
+
+**Functionality**:
+- Logs feedback submissions and rating changes
+- Tracks feedback record deletion
+
+**Note**: All audit triggers include error handling to prevent audit failures from breaking transactions.
 
 ---
 
@@ -347,7 +410,40 @@ BEGIN
 END;
 /
 ```
+#### PKG_AUDIT_REPORTING (Optional - Phase 8)
 
+**PROC_GET_RECORD_AUDIT_TRAIL**
+- **Parameters**: `p_table_name`, `p_record_id`
+- **Functionality**: Displays complete audit trail for a specific record
+
+**PROC_GET_USER_AUDIT_TRAIL**
+- **Parameters**: `p_username`, `p_start_date` (optional), `p_end_date` (optional)
+- **Functionality**: Shows all changes made by a specific user
+
+**PROC_GET_TABLE_AUDIT_TRAIL**
+- **Parameters**: `p_table_name`, `p_start_date` (optional), `p_end_date` (optional)
+- **Functionality**: Shows all changes to a specific table
+
+**FUNC_GET_CHANGE_COUNT**
+- **Parameters**: `p_table_name`, `p_record_id`
+- **Returns**: NUMBER (count of changes)
+- **Functionality**: Returns the number of times a record has been changed
+
+**PROC_GENERATE_AUDIT_SUMMARY**
+- **Parameters**: `p_start_date` (optional), `p_end_date` (optional)
+- **Functionality**: Generates summary report of all audit activity
+
+**Usage Example**:
+```sql
+-- Get audit trail for a record
+EXEC PKG_AUDIT_REPORTING.PROC_GET_RECORD_AUDIT_TRAIL('SERVICE_REQUESTS', 1);
+
+-- Get user activity
+EXEC PKG_AUDIT_REPORTING.PROC_GET_USER_AUDIT_TRAIL('USERNAME');
+
+-- Generate summary
+EXEC PKG_AUDIT_REPORTING.PROC_GENERATE_AUDIT_SUMMARY;
+```
 ---
 
 ### 2.4 Standalone Functions
@@ -599,6 +695,11 @@ Final Project/
    - System functions without roles - this is normal
    - See `ERRORS_AND_FIXES_COMPLETE.md` for details
 
+6. **Audit triggers not firing**: 
+   - Verify audit system is installed: `SELECT * FROM user_tables WHERE table_name = 'AUDIT_LOG';`
+   - Check trigger status: `SELECT trigger_name, status FROM user_triggers WHERE trigger_name LIKE 'TRG_AUDIT_%';`
+   - Ensure triggers are ENABLED
+
 ### Error Resolution
 
 For complete error documentation and fixes, see: **`ERRORS_AND_FIXES_COMPLETE.md`**
@@ -663,17 +764,17 @@ WHERE object_type IN ('PACKAGE', 'PACKAGE BODY');
 
 Potential improvements:
 1. Row-level security for customer/technician data access
-2. Audit table for tracking changes
-3. Email notifications on escalation
-4. Dashboard views for reporting
-5. Advanced workload balancing algorithms
-6. Integration with external systems
+2. Email notifications on escalation
+3. Dashboard views for reporting
+4. Advanced workload balancing algorithms
+5. Integration with external systems
 
 ---
 
 **End of Documentation**
 
 For complete error history and troubleshooting, see: `ERRORS_AND_FIXES_COMPLETE.md`
+
 
 
 
