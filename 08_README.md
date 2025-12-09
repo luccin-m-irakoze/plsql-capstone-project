@@ -39,6 +39,9 @@ PRODUCTS (product_id PK, name, category, price, stock)
 
 SERVICE_REQUESTS.priority ──► (N:1) SLA_RULES (sla_id PK, priority_level UK, resolution_time_hours)
 ```
+###1.1.1 ERD Diagram
+
+
 
 ### 1.2 Table Descriptions
 
@@ -658,5 +661,6 @@ Potential improvements:
 **End of Documentation**
 
 For complete error history and troubleshooting, see: `ERRORS_AND_FIXES_COMPLETE.md`
+
 
 
