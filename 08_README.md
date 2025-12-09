@@ -39,8 +39,21 @@ PRODUCTS (product_id PK, name, category, price, stock)
 
 SERVICE_REQUESTS.priority ──► (N:1) SLA_RULES (sla_id PK, priority_level UK, resolution_time_hours)
 ```
-###1.1.1 ERD Diagram
+### 1.1.1 ERD Diagram
 
+<img width="1130" height="609" alt="CRM-ERD" src="https://github.com/user-attachments/assets/d0f12463-d806-435a-9d38-2df5c8398602" />
+
+### 1.1.2 UML Class Diagram
+
+<img width="1862" height="984" alt="CRM-UML Class Diagram" src="https://github.com/user-attachments/assets/680aacbb-c5c1-4e81-9e52-b04754062f14" />
+
+### 1.1.3 BPMN Diagrams
+
+<img width="589" height="1652" alt="CRM-Service Request BPMN" src="https://github.com/user-attachments/assets/55ac1327-a428-4c0c-a509-9fe3d0f1f6e6" />
+
+<img width="896" height="1030" alt="CRM-SLA Mon - BPMN" src="https://github.com/user-attachments/assets/e86e3600-e7d7-419a-b8e8-b0ffb4a5ae75" />
+
+<img width="738" height="1903" alt="CRM-Ticket Management - BPMN" src="https://github.com/user-attachments/assets/840d8a36-bea5-4450-ba92-948f420f08df" />
 
 
 ### 1.2 Table Descriptions
@@ -661,6 +674,7 @@ Potential improvements:
 **End of Documentation**
 
 For complete error history and troubleshooting, see: `ERRORS_AND_FIXES_COMPLETE.md`
+
 
 
 
